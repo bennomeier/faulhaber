@@ -4,6 +4,7 @@ Faulhaber mc5005
 mc5005.py provides a python module to interface to the Faulhaber MC5005 motion controller via serial interface. 
 
 This module requires the pyserial module which can be installed via
+
 >>> pip install pyserial
 
 You should still setup your motor with Motion Manager first. After that, you can use the Motor class of mc5005.py to control the motor.
