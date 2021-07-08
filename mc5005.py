@@ -193,8 +193,8 @@ class Motor(Controller):
         """set absolute position. Make sure the device is in position mode prior to using 
         this function."""
         self.setTarget(value)
-        self.setControlWord2(0x0f)
-        self.setControlWord2(0x3f)
+        self.setControlWord(0x0f)
+        self.setControlWord(0x3f)
 
 
     def positionRelative(self, value):
@@ -306,7 +306,7 @@ class Motor(Controller):
 
 
 if __name__ == "__main__":
-    C = Controller("COM4") #setup your port here
+    C = Controller("COM8") #setup your port here
     # C.ClearDigOut(1)  #I/O port of Faulhaber connected with a relay to power on/off the hall sensors.
     print("Device Type: ", C.getCastedRegister(0x1000))
     print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
@@ -328,22 +328,22 @@ if __name__ == "__main__":
     print("\n\nPreparing Device.\n" + "="*20)
 
     X1 = Motor(C, node = b'\x01')
-    Y2 = Motor(C, node = b'\x02')
+    Y1 = Motor(C, node = b'\x02')
 
     X1.setPositionMode()
-    Y2.setPositionMode()
+    Y1.setPositionMode()
     C.printStatus()
 
     X1.Disable2()
-    Y2.Disable2()
+    Y1.Disable2()
     print("Disable Complete.")
     print("Restarting Device.")
     X1.shutDown()
     X1.switchOn()
     X1.enable()
-    Y2.shutDown()
-    Y2.switchOn()
-    Y2.enable()
+    Y1.shutDown()
+    Y1.switchOn()
+    Y1.enable()
     print("Restart Complete.")
     C.printStatus()
     print("")
@@ -354,19 +354,19 @@ if __name__ == "__main__":
     # C.printStatus()
     # print("")
 
-    for i in range(3):
-        pos = round(i*204800 + 0)
-        Y2.positionAbsolute(pos)
-        X1.positionAbsolute(pos)
-        yt = Y2.TargetReached('y2')
-        xt = X1.TargetReached('x1')
-        while (yt!=1 and xt!=1):
-            time.sleep(0.5)
-        print (i)
-        time.sleep(0.3)
+    # for i in range(3):
+    #     pos = round(i*204800 + 0)
+    #     Y2.positionAbsolute(pos)
+    #     X1.positionAbsolute(pos)
+    #     yt = Y2.TargetReached('y2')
+    #     xt = X1.TargetReached('x1')
+    #     while (yt!=1 and xt!=1):
+    #         time.sleep(0.5)
+    #     print (i)
+    #     time.sleep(0.3)
 
-    X1.Disable2()
-    Y2.Disable2()
-    # C.SetDigOut(1)
-    C.close()
+    # X1.Disable2()
+    # Y2.Disable2()
+    # # C.SetDigOut(1)
+    # C.close()
 
