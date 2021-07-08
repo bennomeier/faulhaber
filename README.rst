@@ -9,48 +9,79 @@ This module requires the pyserial module which can be installed via
 
 You should still setup your motor with Motion Manager first. After that, you can use the Motor class of mc5005.py to control the motor.
 
+Things added: Benno Meier: motor class to control more than 1 motor. 
+Theodoros Anagnos: Enable, Disable, Target reached confirmation, I/O port handling and debug. This allows for 
+smoother operation of the motors (no movements during start/stop).
+
 The following code illustrates the usage of the module:
 
 .. code-block:: python
 
-    from mc5005 import Motor
+    import mc5005 as mc
     
-    M = Motor("/dev/cu.usbserial-FTYO2YC9")
-    print("Device Type: ", M.getCastedRegister(0x1000))
-    print("Serial Number: ", M.getCastedRegister(0x1018, subindex = 4))
-    print("Status: ", M.getCastedRegister(0x6041))
-    print("Modes of Operation: ", M.getCastedRegister(0x6060))
-    print("Modes of Operation Display: ", M.getCastedRegister(0x6061))
-    print("Producer Heartbeat Time: ", M.getCastedRegister(0x1017))
-    print("Actual Program Position: ", M.getCastedRegister(0x3001, subindex = 3))
-    print("Actual Program State: ", M.getCastedRegister(0x3001, subindex = 4))
-    print("Error State: ", M.getCastedRegister(0x3001, subindex = 8))
-    print("Error code: ", M.getCastedRegister(0x3001, subindex = 9))
-    print("Motor Type: ", M.getCastedRegister(0x2329, subindex = 0x0b))
-    print("Encoder Increments: ", M.getCastedRegister(0x608f, subindex = 1))
-    print("Serial Number: ", M.getCastedRegister(0x1018, subindex = 4))
-    print("Feed Constant: ", M.getCastedRegister(0x6092, subindex = 1))
-    M.printStatus()
+    C = mc.Controller("COM4") #setup your port here
+    # C.ClearDigOut(1)  #I/O port of Faulhaber connected with a relay to power on/off the hall sensors.
+    print("Device Type: ", C.getCastedRegister(0x1000))
+    print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
+    print("Status: ", C.getCastedRegister(0x6041))
+    print("Modes of Operation: ", C.getCastedRegister(0x6060))
+    print("Modes of Operation Display: ", C.getCastedRegister(0x6061))
+    print("Producer Heartbeat Time: ", C.getCastedRegister(0x1017))
+    print("Actual Program Position: ", C.getCastedRegister(0x3001, subindex = 3))
+    print("Actual Program State: ", C.getCastedRegister(0x3001, subindex = 4))
+    print("Error State: ", C.getCastedRegister(0x3001, subindex = 8))
+    print("Error code: ", C.getCastedRegister(0x3001, subindex = 9))
+    print("Motor Type: ", C.getCastedRegister(0x2329, subindex = 0x0b))
+    print("Encoder Increments: ", C.getCastedRegister(0x608f, subindex = 1))
+    print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
+    print("Feed Constant: ", C.getCastedRegister(0x6092, subindex = 1))
+    
+    C.printStatus()
+
     print("\n\nPreparing Device.\n" + "="*20)
-    M.setPositionMode()
-    M.printStatus()
 
+    X1 = Motor(C, node = b'\x01')
+    Y2 = Motor(C, node = b'\x02')
+
+    X1.setPositionMode()
+    Y2.setPositionMode()
+    C.printStatus()
+
+    X1.Disable2()
+    Y2.Disable2()
+    print("Disable Complete.")
     print("Restarting Device.")
-    M.shutDown()
-    M.switchOn()
-    M.enable()
+    X1.shutDown()
+    X1.switchOn()
+    X1.enable()
+    Y2.shutDown()
+    Y2.switchOn()
+    Y2.enable()
     print("Restart Complete.")
-    M.printStatus()
+    C.printStatus()
     print("")
-    # move by 360 degrees in 60 steps:
-    for i in range(60):
-        pos = round(i*0x4000/60)
-        M.positionAbsolute(pos)
-        time.sleep(0.3)
-        print("Set Position: ", pos, " Read position: ", M.getPosition())
-    
-    M.close()
 
+    # print("Enable Device.")
+    # X1.Enable2()  #seems that for the 2nd motor does not work the Enable2 function
+    # Y2.Enable2()
+    # C.printStatus()
+    # print("")
+
+    for i in range(3):
+        pos = round(i*204800 + 0)
+        Y2.positionAbsolute(pos)
+        X1.positionAbsolute(pos)
+        yt = Y2.TargetReached('y2')
+        xt = X1.TargetReached('x1')
+        while (yt!=1 and xt!=1):
+            time.sleep(0.5)
+        print (i)
+        time.sleep(0.3)
+
+    X1.Disable2()
+    Y2.Disable2()
+    # C.SetDigOut(1)
+    C.close()
 
 
 License
