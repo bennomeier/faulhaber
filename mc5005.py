@@ -306,7 +306,7 @@ class Motor(Controller):
 
 
 if __name__ == "__main__":
-    C = Controller("COM8") #setup your port here
+    C = Controller("COM10") #setup your port here
     # C.ClearDigOut(1)  #I/O port of Faulhaber connected with a relay to power on/off the hall sensors.
     print("Device Type: ", C.getCastedRegister(0x1000))
     print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
@@ -356,9 +356,9 @@ if __name__ == "__main__":
 
     # for i in range(3):
     #     pos = round(i*204800 + 0)
-    #     Y2.positionAbsolute(pos)
+    #     Y1.positionAbsolute(pos)
     #     X1.positionAbsolute(pos)
-    #     yt = Y2.TargetReached('y2')
+    #     yt = Y1.TargetReached('y1')
     #     xt = X1.TargetReached('x1')
     #     while (yt!=1 and xt!=1):
     #         time.sleep(0.5)
@@ -366,7 +366,7 @@ if __name__ == "__main__":
     #     time.sleep(0.3)
 
     # X1.Disable2()
-    # Y2.Disable2()
+    # Y1.Disable2()
     # # C.SetDigOut(1)
     # C.close()
 
