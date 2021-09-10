@@ -2,7 +2,8 @@
 A python module to control Faulhaber motors via the MC5005 Motion Controller and serial interface.
 - Setup your motor with Motion Manager first. 
 - Install pyserial from PyPI
-Now you can use this module to control the motor via serial interface.
+Now you can use this module to control the motor via serial interface (needs setup first of course).
+python 3 support only
 
 Copyright (2020) Benno Meier
 
@@ -20,8 +21,7 @@ OPERATION_MODE = 0x6060           # operation mode
 OPERATION_MODE_DISP = 0x6061      # operation mode display
 
 def dump(x):
-    return ''.join([type(x).__name__, "('",
-                    *['\\x'+'{:02x}'.format(i) for i in x], "')"])
+    return ''.join([type(x).__name__, "('",*['\\x'+'{:02x}'.format(i) for i in x], "')"])
 
 
 class Controller(object):
@@ -117,8 +117,10 @@ class Controller(object):
         command = ( node + self.SET
                     + int.to_bytes(address, 2, 'little')
                     + int.to_bytes(subindex, 1, 'little')
-                    + int.to_bytes(value, length, 'little'))
-
+                    + int.to_bytes(value, length, 'little',signed=True))
+        # print(dump(command))
+        # print(command)
+        
         self.write(command)
 
     def getCastedRegister(self, address, subindex = 0):
@@ -166,6 +168,9 @@ class Motor(Controller):
     def setControlWord(self, word):
         self.controller.setRegister(0x6040, word, 2, node = self.node)
 
+    def setMaxSpeed(self, value=6000):
+        self.controller.setRegister(0x6080, value, 2, node = self.node)
+
     def setTarget(self, value):
         self.controller.setRegister(0x607a, value, 4, node = self.node)
 
@@ -202,21 +207,6 @@ class Motor(Controller):
         self.setTarget(value)
         self.setControlWord(0x0f)
         self.setControlWord(0x7f)
-
-    """
-    --------------------------------------------
-     WaitPos()
-     can be called directly after either the
-     positionAbsolute or the positionRelative functions.
-     Will wait for the InPos Bit 0x400 being set
-     will NOT check FOR a rising edge! Adapted from FA.
-    """
-    def TargetReached(self,node):
-        stop = 0
-        while stop == 0:
-            if (int(self.getCastedRegister(0x6041),base=16) & 0x400) == 0x400: #Target Reached set
-                stop=1
-        return (stop) #flag to continue
 
     """
     --------------------------------------------
@@ -305,68 +295,79 @@ class Motor(Controller):
 
 
 
-if __name__ == "__main__":
-    C = Controller("COM8") #setup your port here
-    # C.ClearDigOut(1)  #I/O port of Faulhaber connected with a relay to power on/off the hall sensors.
-    print("Device Type: ", C.getCastedRegister(0x1000))
-    print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
-    print("Status: ", C.getCastedRegister(0x6041))
-    print("Modes of Operation: ", C.getCastedRegister(0x6060))
-    print("Modes of Operation Display: ", C.getCastedRegister(0x6061))
-    print("Producer Heartbeat Time: ", C.getCastedRegister(0x1017))
-    print("Actual Program Position: ", C.getCastedRegister(0x3001, subindex = 3))
-    print("Actual Program State: ", C.getCastedRegister(0x3001, subindex = 4))
-    print("Error State: ", C.getCastedRegister(0x3001, subindex = 8))
-    print("Error code: ", C.getCastedRegister(0x3001, subindex = 9))
-    print("Motor Type: ", C.getCastedRegister(0x2329, subindex = 0x0b))
-    print("Encoder Increments: ", C.getCastedRegister(0x608f, subindex = 1))
-    print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
-    print("Feed Constant: ", C.getCastedRegister(0x6092, subindex = 1))
-    
-    C.printStatus()
+# if __name__ == "__main__":
+#     C = Controller("COM4")
+#     # C.ClearDigOut(1)   #Power on Hall sensors
+#     print("Device Type: ", C.getCastedRegister(0x1000))
+#     print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
+#     print("Status: ", C.getCastedRegister(0x6041))
+#     print("Modes of Operation: ", C.getCastedRegister(0x6060))
+#     print("Modes of Operation Display: ", C.getCastedRegister(0x6061))
+#     print("Producer Heartbeat Time: ", C.getCastedRegister(0x1017))
+#     print("Actual Program Position: ", C.getCastedRegister(0x3001, subindex = 3))
+#     print("Actual Program State: ", C.getCastedRegister(0x3001, subindex = 4))
+#     print("Error State: ", C.getCastedRegister(0x3001, subindex = 8))
+#     print("Error code: ", C.getCastedRegister(0x3001, subindex = 9))
+#     print("Motor Type: ", C.getCastedRegister(0x2329, subindex = 0x0b))
+#     print("Encoder Increments: ", C.getCastedRegister(0x608f, subindex = 1))
+#     print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
+#     print("Feed Constant: ", C.getCastedRegister(0x6092, subindex = 1))
+#     C.printStatus()
+#     print("\n\nPreparing Device.\n" + "="*20)
+#     X1 = Motor(C, node = b'\x01')   #vertical axis
+#     Y1 = Motor(C, node = b'\x02')   #horizontal axis
+#     X1.setPositionMode()    #set PP mode
+#     Y1.setPositionMode()    #set PP mode
+#     C.printStatus()
+#     print("Restarting Devices.")
+#     enable_1(X1)
+#     enable_1(Y1)
+#     print("Restart Complete.")
+#     C.printStatus()
+#     print("")
 
-    print("\n\nPreparing Device.\n" + "="*20)
 
-    X1 = Motor(C, node = b'\x01')
-    Y1 = Motor(C, node = b'\x02')
+def enable_1(NodeNr):   #simple enable of axis
+    NodeNr.shutDown()
+    NodeNr.switchOn()
+    NodeNr.enable()
+    print ('Enable axis '+str(NodeNr)+' successful')
 
-    X1.setPositionMode()
-    Y1.setPositionMode()
-    C.printStatus()
 
-    X1.Disable2()
-    Y1.Disable2()
-    print("Disable Complete.")
-    print("Restarting Device.")
-    X1.shutDown()
-    X1.switchOn()
-    X1.enable()
-    Y1.shutDown()
-    Y1.switchOn()
-    Y1.enable()
-    print("Restart Complete.")
-    C.printStatus()
-    print("")
+C = Controller("/dev/ttyUSB2")
+# C.ClearDigOut(1)   #Power on Hall sensors
+print("Device Type: ", C.getCastedRegister(0x1000))
+print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
+print("Status: ", C.getCastedRegister(0x6041))
+print("Modes of Operation: ", C.getCastedRegister(0x6060))
+print("Modes of Operation Display: ", C.getCastedRegister(0x6061))
+print("Producer Heartbeat Time: ", C.getCastedRegister(0x1017))
+print("Actual Program Position: ", C.getCastedRegister(0x3001, subindex = 3))
+print("Actual Program State: ", C.getCastedRegister(0x3001, subindex = 4))
+print("Error State: ", C.getCastedRegister(0x3001, subindex = 8))
+print("Error code: ", C.getCastedRegister(0x3001, subindex = 9))
+print("Motor Type: ", C.getCastedRegister(0x2329, subindex = 0x0b))
+print("Encoder Increments: ", C.getCastedRegister(0x608f, subindex = 1))
+print("Serial Number: ", C.getCastedRegister(0x1018, subindex = 4))
+print("Feed Constant: ", C.getCastedRegister(0x6092, subindex = 1))
+  
+C.printStatus()
 
-    # print("Enable Device.")
-    # X1.Enable2()  #seems that for the 2nd motor does not work the Enable2 function
-    # Y2.Enable2()
-    # C.printStatus()
-    # print("")
+print("\n\nPreparing Device.\n" + "="*20)
 
-    # for i in range(3):
-    #     pos = round(i*204800 + 0)
-    #     Y2.positionAbsolute(pos)
-    #     X1.positionAbsolute(pos)
-    #     yt = Y2.TargetReached('y2')
-    #     xt = X1.TargetReached('x1')
-    #     while (yt!=1 and xt!=1):
-    #         time.sleep(0.5)
-    #     print (i)
-    #     time.sleep(0.3)
+X1 = Motor(C, node = b'\x01')   #vertical axis
+Y1 = Motor(C, node = b'\x02')   #horizontal axis
 
-    # X1.Disable2()
-    # Y2.Disable2()
-    # # C.SetDigOut(1)
-    # C.close()
+X1.setPositionMode()    #set PP mode
+Y1.setPositionMode()    #set PP mode
+C.printStatus()
+
+
+print("Restarting Devices.")
+enable_1(X1)
+enable_1(Y1)
+print("Restart Complete.")
+C.printStatus()
+print("")
+
 
