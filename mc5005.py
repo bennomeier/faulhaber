@@ -124,7 +124,7 @@ class Controller(object):
         self.write(command)
 
     def getCastedRegister(self, address, subindex = 0):
-        return hex(int.from_bytes(C.readRegister(address, subindex = subindex), byteorder='little'))
+        return hex(int.from_bytes(self.readRegister(address, subindex = subindex), byteorder='little'))
 
     def printStatus(self):
         print("Status: ", self.getCastedRegister(0x6041))
